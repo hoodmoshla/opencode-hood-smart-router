@@ -23,6 +23,7 @@ import { createPromptSubmissionState } from "./submission-state"
 import { normalizeSessionInfo } from "@/utils/session"
 import { Event } from "@opencode-ai/schema/event"
 import { blobDataUrl } from "@/utils/draft-store"
+import { chooseHoodModel, isHoodRouterEnabled } from "@/router/hood-smart-router"
 
 type PendingPrompt = {
   abort: AbortController
@@ -336,9 +337,47 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     }
 
     const modelSelection = input.model ?? local.model
-    const currentModel = modelSelection.current()
+    let currentModel = modelSelection.current()
     const currentAgent = local.agent.current()
     const variant = modelSelection.variant.current()
+
+    // Architect is a real runtime router: it resolves to an available model before
+    // session creation and before the prompt is sent. Build and manual SeekAI stay untouched.
+    if (currentAgent?.name === "architect" && isHoodRouterEnabled()) {
+      const decision = chooseHoodModel({
+        text,
+        hasImages: images.length > 0,
+        available: local.model.list().map((item) => ({
+          providerID: item.provider.id,
+          modelID: item.id,
+          name: item.name,
+        })),
+        fallback: currentModel
+          ? { providerID: currentModel.provider.id, modelID: currentModel.id, name: currentModel.name }
+          : undefined,
+      })
+      const routed = decision
+        ? local.model.list().find(
+            (item) => item.provider.id === decision.model.providerID && item.id === decision.model.modelID,
+          )
+        : undefined
+      if (decision && routed) {
+        currentModel = routed
+        const log = {
+          agent: currentAgent.name,
+          task: decision.task,
+          providerID: decision.model.providerID,
+          modelID: decision.model.modelID,
+          reason: decision.reason,
+        }
+        console.info("[Hood Smart Router] decision", log)
+        showToast({
+          title: "Hood Smart Router",
+          description: `${decision.model.providerID}/${decision.model.modelID} — ${decision.task} — ${decision.reason}`,
+        })
+      }
+    }
+
     if (!currentModel || !currentAgent) {
       showToast({
         title: language.t("prompt.toast.modelAgentRequired.title"),
