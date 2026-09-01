@@ -23,7 +23,7 @@ import { createPromptSubmissionState } from "./submission-state"
 import { normalizeSessionInfo } from "@/utils/session"
 import { Event } from "@opencode-ai/schema/event"
 import { blobDataUrl } from "@/utils/draft-store"
-import { chooseHoodModel, isHoodRouterEnabled, setHoodRouterEnabled } from "@/router/hood-smart-router"
+import { chooseHoodModel, isHoodRouterEnabled, isSeekAIEligible, setHoodRouterEnabled } from "@/router/hood-smart-router"
 
 type PendingPrompt = {
   abort: AbortController
@@ -390,6 +390,19 @@ export function createPromptSubmit(input: PromptSubmitInput) {
           description: `${decision.model.providerID}/${decision.model.modelID} — ${decision.task} — ${decision.reason}`,
         })
       }
+    }
+
+    if (
+      currentAgent?.name === "architect" &&
+      isHoodRouterEnabled() &&
+      currentModel &&
+      !isSeekAIEligible({ providerID: currentModel.provider.id, modelID: currentModel.id, name: currentModel.name })
+    ) {
+      showToast({
+        title: "Hood Smart Router",
+        description: "No verified SeekAI model is currently available; request was not sent",
+      })
+      return
     }
 
     if (!currentModel || !currentAgent) {
