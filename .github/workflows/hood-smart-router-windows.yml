@@ -29,6 +29,8 @@ jobs:
 
       - name: Build Desktop bundle
         run: bun run --filter @opencode-ai/desktop build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Build Windows installer
         run: bun run --filter @opencode-ai/desktop package:win
