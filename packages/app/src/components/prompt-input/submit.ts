@@ -40,6 +40,7 @@ export type FollowupDraft = {
   agent: string
   model: { providerID: string; modelID: string }
   variant?: string
+  routerFallbackModels?: { providerID: string; modelID: string }[]
 }
 
 type FollowupSendInput = {
@@ -55,6 +56,20 @@ type FollowupSendInput = {
 const draftText = (prompt: Prompt) => prompt.map((part) => ("content" in part ? part.content : "")).join("")
 
 const draftImages = (prompt: Prompt) => prompt.filter((part): part is ImageAttachmentPart => part.type === "image")
+
+const providerErrorStatus = (error: unknown) => {
+  if (!error || typeof error !== "object") return undefined
+  const value = error as { status?: unknown; response?: { status?: unknown }; message?: unknown }
+  const status = value.status ?? value.response?.status
+  return typeof status === "number" ? status : typeof status === "string" ? Number(status) : undefined
+}
+
+const isRetryableProviderError = (error: unknown) => {
+  const status = providerErrorStatus(error)
+  if (status !== undefined) return [408, 429, 500, 502, 503, 504].includes(status)
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+  return message.includes("timeout") || message.includes("timed out") || message.includes("rate limit")
+}
 
 export async function sendFollowupDraft(input: FollowupSendInput) {
   const text = draftText(input.draft.prompt)
@@ -166,39 +181,65 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
       return false
     }
 
-    await input.api.prompt({
-      sessionID: input.draft.sessionID,
-      id: messageID,
-      agent: input.draft.agent,
-      model: input.draft.model,
-      variant: input.draft.variant,
-      legacyParts: requestParts,
-      text: requestParts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n"),
-      files: requestParts.flatMap((part) => {
-        if (part.type !== "file") return []
-        const text = part.source?.text
-        return [
-          {
-            uri: part.url,
-            name: part.filename,
-            mention: text ? { start: text.start, end: text.end, text: text.value } : undefined,
-          },
-        ]
-      }),
-      agents: requestParts.flatMap((part) =>
-        part.type === "agent"
-          ? [
-              {
-                name: part.name,
-                mention: part.source
-                  ? { start: part.source.start, end: part.source.end, text: part.source.value }
-                  : undefined,
-              },
-            ]
-          : [],
-      ),
-    })
-    return true
+    const promptWithModel = (model: FollowupDraft["model"]) =>
+      input.api.prompt({
+        sessionID: input.draft.sessionID,
+        id: messageID,
+        agent: input.draft.agent,
+        model,
+        variant: input.draft.variant,
+        legacyParts: requestParts,
+        text: requestParts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n"),
+        files: requestParts.flatMap((part) => {
+          if (part.type !== "file") return []
+          const text = part.source?.text
+          return [
+            {
+              uri: part.url,
+              name: part.filename,
+              mention: text ? { start: text.start, end: text.end, text: text.value } : undefined,
+            },
+          ]
+        }),
+        agents: requestParts.flatMap((part) =>
+          part.type === "agent"
+            ? [
+                {
+                  name: part.name,
+                  mention: part.source
+                    ? { start: part.source.start, end: part.source.end, text: part.source.value }
+                    : undefined,
+                },
+              ]
+            : [],
+        ),
+      })
+
+    const fallbackModels = input.draft.agent === "architect" ? (input.draft.routerFallbackModels ?? []) : []
+    const attempts = [input.draft.model, ...fallbackModels]
+    let lastError: unknown
+    for (const [index, attempt] of attempts.entries()) {
+      try {
+        await promptWithModel(attempt)
+        if (index > 0) {
+          console.info("[Hood Smart Router] fallback", {
+            from: `${input.draft.model.providerID}/${input.draft.model.modelID}`,
+            to: `${attempt.providerID}/${attempt.modelID}`,
+            reason: "retryable provider error",
+          })
+        }
+        return true
+      } catch (error) {
+        lastError = error
+        if (!isRetryableProviderError(error) || index === attempts.length - 1) throw error
+        console.info("[Hood Smart Router] retry", {
+          providerID: attempt.providerID,
+          modelID: attempt.modelID,
+          status: providerErrorStatus(error),
+        })
+      }
+    }
+    throw lastError
   } catch (err) {
     batch(() => {
       setIdle()
@@ -354,6 +395,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     let currentModel = modelSelection.current()
     const currentAgent = local.agent.current()
     const variant = modelSelection.variant.current()
+    let routerFallbackModels: { providerID: string; modelID: string }[] | undefined
 
     // Architect is a real runtime router: it resolves to an available model before
     // session creation and before the prompt is sent. Build and manual SeekAI stay untouched.
@@ -377,6 +419,10 @@ export function createPromptSubmit(input: PromptSubmitInput) {
         : undefined
       if (decision && routed) {
         currentModel = routed
+        routerFallbackModels = decision.candidates
+          .filter((item) => item.providerID !== decision.model.providerID || item.modelID !== decision.model.modelID)
+          .filter((item) => isSeekAIEligible(item))
+          .map((item) => ({ providerID: item.providerID, modelID: item.modelID }))
         const log = {
           agent: currentAgent.name,
           task: decision.task,
@@ -520,6 +566,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       agent,
       model,
       variant,
+      routerFallbackModels,
     }
 
     const clearInput = () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { chooseHoodModel, classifyHoodTask, isSeekAIEligible, seekAIHealth } from "./hood-smart-router"
+import { chooseHoodModel, classifyHoodTask, isHoodRouterEnabled, isSeekAIEligible, seekAIHealth, setHoodRouterEnabled } from "./hood-smart-router"
 
 const models = [
   { providerID: "big-pickle", modelID: "big-pickle", name: "Big Pickle", free: true },
@@ -29,6 +29,22 @@ describe("Hood Smart Router", () => {
   test("selects a vision-capable model for image tasks", () => {
     const decision = chooseHoodModel({ text: "inspect this screenshot", hasImages: true, available: models })
     expect(decision?.model.providerID).toBe("google")
+  })
+
+  test("supports disabling and re-enabling the router", () => {
+    const values = new Map<string, string>()
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    })
+
+    setHoodRouterEnabled(false)
+    expect(isHoodRouterEnabled()).toBe(false)
+    setHoodRouterEnabled(true)
+    expect(isHoodRouterEnabled()).toBe(true)
   })
 
   test("allows only the HTTP 200 verified SeekAI model automatically", () => {
