@@ -27,6 +27,9 @@ jobs:
       - name: Typecheck
         run: bun run --filter @opencode-ai/app typecheck && bun run --filter @opencode-ai/desktop typecheck
 
+      - name: Build Desktop bundle
+        run: bun run --filter @opencode-ai/desktop build
+
       - name: Build Windows installer
         run: bun run --filter @opencode-ai/desktop package:win
         env:
