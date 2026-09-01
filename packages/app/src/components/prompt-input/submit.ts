@@ -23,7 +23,7 @@ import { createPromptSubmissionState } from "./submission-state"
 import { normalizeSessionInfo } from "@/utils/session"
 import { Event } from "@opencode-ai/schema/event"
 import { blobDataUrl } from "@/utils/draft-store"
-import { chooseHoodModel, isHoodRouterEnabled } from "@/router/hood-smart-router"
+import { chooseHoodModel, isHoodRouterEnabled, setHoodRouterEnabled } from "@/router/hood-smart-router"
 
 type PendingPrompt = {
   abort: AbortController
@@ -333,6 +333,20 @@ export function createPromptSubmit(input: PromptSubmitInput) {
 
     if (text.trim().length === 0 && images.length === 0 && input.commentCount() === 0) {
       if (input.working()) void abort()
+      return
+    }
+
+    const hoodCommand = text.trim().match(/^\/hood-router(?:\s+(on|off|status))?$/i)
+    if (hoodCommand) {
+      const action = hoodCommand[1]?.toLowerCase() ?? "status"
+      if (action === "on") setHoodRouterEnabled(true)
+      if (action === "off") setHoodRouterEnabled(false)
+      const enabled = isHoodRouterEnabled()
+      showToast({
+        title: "Hood Smart Router",
+        description: enabled ? "enabled" : "disabled; OpenCode uses the selected model normally",
+      })
+      submission.clear()
       return
     }
 
