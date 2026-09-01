@@ -95,7 +95,8 @@ const layer = Layer.effect(
             .capture({ repository: sourceRepository, path: current.location.directory })
             .pipe(Effect.mapError((error) => new CaptureChangesError({ message: error.message })))
         : Git.ChangeSet.make("")
-      if (patch) {
+      const hasPatch = patch.length > 0
+      if (hasPatch) {
         const repository = yield* git.repo.discover(directory)
         if (!repository) return yield* new ApplyChangesError({ message: "Destination is not a Git repository" })
         yield* git.change
@@ -110,7 +111,7 @@ const layer = Layer.effect(
         timestamp: yield* DateTime.now,
       })
 
-      if (patch) {
+      if (hasPatch) {
         const repository = yield* git.repo.discover(current.location.directory)
         if (!repository)
           return yield* new ResetSourceChangesError({

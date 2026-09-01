@@ -727,11 +727,7 @@ const layer = Layer.effect(
     )
 
     const capture = Effect.fn("Git.change.capture")(function* (input: { repository: Repository; path: AbsolutePath }) {
-      const scope = path.relative(input.repository.worktree, input.path).replaceAll("\\", "/") || "."
-      const tracked = yield* execute(
-        input.repository.worktree,
-        proc,
-      )(["diff", "--binary", "HEAD", "--", scope]).pipe(
+      const tracked = yield* execute(input.path, proc)(["-c", "color.ui=false", "diff", "--no-color", "--binary", "--relative", "HEAD", "--", "."]).pipe(
         Effect.mapError(
           (cause) => new PatchError({ operation: "capture", directory: input.path, message: cause.message, cause }),
         ),
@@ -744,10 +740,7 @@ const layer = Layer.effect(
         })
       }
 
-      const untracked = yield* execute(
-        input.repository.worktree,
-        proc,
-      )(["ls-files", "--others", "--exclude-standard", "-z", "--", scope]).pipe(
+      const untracked = yield* execute(input.path, proc)(["ls-files", "--others", "--exclude-standard", "-z", "--", "."]).pipe(
         Effect.mapError(
           (cause) => new PatchError({ operation: "capture", directory: input.path, message: cause.message, cause }),
         ),
@@ -761,10 +754,7 @@ const layer = Layer.effect(
       }
 
       const created = yield* Effect.forEach(untracked.text.split("\0").filter(Boolean), (file) =>
-        execute(
-          input.repository.worktree,
-          proc,
-        )(["diff", "--binary", "--no-index", "--", "/dev/null", file]).pipe(
+        execute(input.path, proc)(["-c", "color.ui=false", "diff", "--no-color", "--binary", "--no-index", "--", "/dev/null", file]).pipe(
           Effect.mapError(
             (cause) => new PatchError({ operation: "capture", directory: input.path, message: cause.message, cause }),
           ),
@@ -791,10 +781,11 @@ const layer = Layer.effect(
       path: AbsolutePath
       changes: ChangeSet
     }) {
+      const relativePath = path.relative(input.repository.worktree, input.path).replaceAll("\\", "/")
       const result = yield* proc
         .run(
-          ChildProcess.make("git", ["apply", "-"], {
-            cwd: input.path,
+          ChildProcess.make("git", ["apply", ...(relativePath ? ["--directory", relativePath] : []), "-"], {
+            cwd: input.repository.worktree,
             extendEnv: true,
             stdin: Stream.make(new TextEncoder().encode(input.changes)),
           }),
