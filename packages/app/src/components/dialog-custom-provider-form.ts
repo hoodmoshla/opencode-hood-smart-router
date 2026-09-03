@@ -50,8 +50,13 @@ type ValidateArgs = {
 
 export function validateCustomProvider(input: ValidateArgs) {
   const providerID = input.form.providerID.trim()
+  const normalizedProviderID = providerID.toLowerCase()
   const name = input.form.name.trim()
-  const baseURL = input.form.baseURL.trim()
+  const enteredBaseURL = input.form.baseURL.trim().replace(/\/+$/, "")
+  const baseURL =
+    normalizedProviderID === "seekai" && enteredBaseURL === "https://seekai.cc"
+      ? "https://seekai.cc/v1"
+      : enteredBaseURL.replace(/\/chat\/completions$/, "")
   const apiKey = input.form.apiKey.trim()
 
   const env = apiKey.match(/^\{env:([^}]+)\}$/)?.[1]?.trim()
@@ -133,7 +138,7 @@ export function validateCustomProvider(input: ValidateArgs) {
     models,
     headers,
     result: {
-      providerID,
+      providerID: normalizedProviderID === "seekai" ? "seekai" : providerID,
       name,
       key,
       config: {

@@ -1773,8 +1773,16 @@ const layer = Layer.effect(
           return url
         })
 
-        if (baseURL !== undefined) options["baseURL"] = baseURL
-        if (options["apiKey"] === undefined && provider.key) options["apiKey"] = provider.key
+        if (baseURL !== undefined) {
+          options["baseURL"] =
+            model.providerID.toLowerCase() === "seekai"
+              ? baseURL.replace(/\/chat\/completions\/?$/, "")
+              : baseURL
+        }
+        // Credentials entered through the provider auth dialog are authoritative.
+        // This prevents a stale custom-provider options.apiKey from overriding the
+        // current credential stored by auth.set, which is especially important for SeekAI.
+        if (provider.key) options["apiKey"] = provider.key
         if (model.headers)
           options["headers"] = {
             ...options["headers"],

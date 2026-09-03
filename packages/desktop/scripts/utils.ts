@@ -1,5 +1,5 @@
 import { $ } from "bun"
-import { chmod, copyFile, mkdtemp, rm } from "node:fs/promises"
+import { chmod, copyFile, mkdtemp, rm, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -71,8 +71,15 @@ export function getCurrentCli(target = RUST_TARGET ?? nativeTarget()) {
 
 export async function downloadCliToResources() {
   const cli = getCurrentCli()
+  const resourcePath = join(import.meta.dir, "..", "resources", "opencode-cli")
+  const dest = windowsify(resourcePath)
+  const existing = await stat(dest).catch(() => undefined)
+  if (existing && existing.isFile() && existing.size > 0) {
+    console.log(`Using cached CLI at ${dest}`)
+    return
+  }
+
   const directory = await mkdtemp(join(tmpdir(), "opencode-cli-"))
-  const dest = windowsify("resources/opencode-cli")
   try {
     await $`bun install --no-save --cwd ${directory} ${`${cli.package}@${CLI_VERSION}`} ${`--os=${cli.os}`} ${`--cpu=${cli.cpu}`}`
     await copyFile(
