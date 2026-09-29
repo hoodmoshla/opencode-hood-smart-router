@@ -9,11 +9,6 @@ const execFileAsync = promisify(execFile)
 const packageDir = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(packageDir, "../..")
 const signScript = path.join(rootDir, "script", "sign-windows.ps1")
-// The Electron 42 packaging update briefly installed Linux launchers/icons under
-// "opencode-desktop". Keep that hidden desktop entry around so existing GNOME/KDE
-// pins still resolve after the canonical app id changes back to ai.opencode.desktop.
-const legacyDesktopEntry = path.join(packageDir, "resources", "linux", "opencode-desktop.desktop")
-const legacyDesktopEntryFpm = `${legacyDesktopEntry}=/usr/share/applications/opencode-desktop.desktop`
 
 const metainfoFpm = (appId: string) =>
   `${path.join(packageDir, "resources", `${appId}.metainfo.xml`)}=/usr/share/metainfo/${appId}.metainfo.xml`
@@ -36,22 +31,31 @@ const channel = (() => {
 })()
 
 const APP_IDS = {
-  dev: "ai.opencode.desktop.dev",
-  beta: "ai.opencode.desktop.beta",
-  prod: "ai.opencode.desktop",
+  dev: "com.hoodmoshla.hoodsmartrouter.dev",
+  beta: "com.hoodmoshla.hoodsmartrouter.beta",
+  prod: "com.hoodmoshla.hoodsmartrouter",
 } as const
 
+const APP_NAMES = {
+  dev: "Hood Smart Router Dev",
+  beta: "Hood Smart Router Beta",
+  prod: "Hood Smart Router",
+} as const
+
+const PROTOCOL_NAME = {
+  dev: "Hood Smart Router Dev",
+  beta: "Hood Smart Router Beta",
+  prod: "Hood Smart Router",
+} as const
+
+const PROTOCOL_SCHEME = "hood-smart-router"
+
 const getBase = (appId: string): Configuration => ({
-  artifactName: "opencode-desktop-${os}-${arch}.${ext}",
+  artifactName: "hood-smart-router-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
   },
-  // Linux launchers are .desktop files, so this is the desktop file name,
-  // not just the app id. For prod, app id "ai.opencode.desktop" becomes
-  // "ai.opencode.desktop.desktop".
-  // https://developer.gnome.org/documentation/guidelines/maintainer/integrating.html
-  // https://www.electron.build/docs/linux/
   extraMetadata: {
     desktopName: `${appId}.desktop`,
   },
@@ -86,11 +90,12 @@ const getBase = (appId: string): Configuration => ({
     sign: true,
   },
   protocols: {
-    name: "OpenCode",
-    schemes: ["opencode"],
+    name: PROTOCOL_NAME[channel],
+    schemes: [PROTOCOL_SCHEME],
   },
   win: {
     icon: `resources/icons/icon.ico`,
+    executableName: "HoodSmartRouter",
     signtoolOptions: {
       sign: signWindows,
     },
@@ -109,8 +114,6 @@ const getBase = (appId: string): Configuration => ({
     executableName: appId,
     desktop: {
       entry: {
-        // Match the installed .desktop file and hicolor icon basename so
-        // Linux shells can associate the running Electron window with its launcher.
         StartupWMClass: appId,
       },
     },
@@ -127,31 +130,31 @@ function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode Dev",
+        productName: APP_NAMES.dev,
         deb: { fpm: [metainfoFpm(appId)] },
-        rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
+        rpm: { packageName: "hood-smart-router-dev", fpm: [metainfoFpm(appId)] },
       }
     }
     case "beta": {
       return {
         ...base,
         appId,
-        productName: "OpenCode Beta",
-        protocols: { name: "OpenCode Beta", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode-beta", channel: "latest" },
+        productName: APP_NAMES.beta,
+        protocols: { name: PROTOCOL_NAME.beta, schemes: [PROTOCOL_SCHEME] },
+        publish: { provider: "github", owner: "hoodmoshla", repo: "opencode-hood-smart-router", channel: "latest" },
         deb: { fpm: [metainfoFpm(appId)] },
-        rpm: { packageName: "opencode-beta", fpm: [metainfoFpm(appId)] },
+        rpm: { packageName: "hood-smart-router-beta", fpm: [metainfoFpm(appId)] },
       }
     }
     case "prod": {
       return {
         ...base,
         appId,
-        productName: "OpenCode",
-        protocols: { name: "OpenCode", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode", channel: "latest" },
-        deb: { fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
-        rpm: { packageName: "opencode", fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
+        productName: APP_NAMES.prod,
+        protocols: { name: PROTOCOL_NAME.prod, schemes: [PROTOCOL_SCHEME] },
+        publish: { provider: "github", owner: "hoodmoshla", repo: "opencode-hood-smart-router", channel: "latest" },
+        deb: { fpm: [metainfoFpm(appId)] },
+        rpm: { packageName: "hood-smart-router", fpm: [metainfoFpm(appId)] },
       }
     }
   }

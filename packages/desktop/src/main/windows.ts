@@ -226,7 +226,14 @@ export function createMainWindow(id: string = randomUUID()) {
   loadWindow(win, "index.html")
   wireZoom(win)
 
+  const fallbackShowTimer = setTimeout(() => {
+    if (!win.isDestroyed() && !win.isVisible()) {
+      win.show()
+    }
+  }, 2500)
+
   win.once("ready-to-show", () => {
+    clearTimeout(fallbackShowTimer)
     win.show()
   })
 
