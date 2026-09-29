@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": "Hood Smart Router",
+  "upstream": {
+    "repository": "https://github.com/anomalyco/opencode.git",
+    "branch": "dev",
+    "lastSyncedCommit": "d870e22c70f27103016dcd479edcfebf86136d93",
+    "lastSyncedTimestamp": "2026-09-20T23:30:00Z"
+  },
+  "downstream": {
+    "repository": "https://github.com/hoodmoshla/opencode-hood-smart-router.git",
+    "officialBranch": "hood-smart-router",
+    "syncBranch": "upstream-sync",
+    "currentRelease": "1.18.25",
+    "appId": "com.hoodmoshla.hoodsmartrouter",
+    "productName": "Hood Smart Router",
+    "executable": "HoodSmartRouter.exe"
+  },
+  "protectedFeatures": [
+    {
+      "name": "Arabic Translation (i18n)",
+      "files": ["packages/app/src/i18n/ar.ts"],
+      "critical": true
+    },
+    {
+      "name": "RTL Layout & Full Width Chat",
+      "files": [
+        "packages/app/src/index.css",
+        "packages/app/src/pages/session.tsx",
+        "packages/app/src/components/titlebar.tsx"
+      ],
+      "critical": true
+    },
+    {
+      "name": "Hood Smart Router & Model Fallback",
+      "files": [
+        "packages/app/src/router/hood-smart-router.ts",
+        "packages/app/src/router/smart-model-router.ts",
+        "packages/app/src/router/index.ts",
+        "packages/app/src/router/hood-smart-router.test.ts"
+      ],
+      "critical": true
+    },
+    {
+      "name": "Native Built-in Agents (architect, seekai)",
+      "files": ["packages/opencode/src/agent/agent.ts"],
+      "critical": true
+    },
+    {
+      "name": "Workspace Directory Model Bootstrapping",
+      "files": [
+        "packages/app/src/pages/directory-layout.tsx",
+        "packages/app/src/hooks/use-providers.ts",
+        "packages/app/src/hooks/provider-catalog.ts"
+      ],
+      "critical": true
+    },
+    {
+      "name": "Official Desktop Identity & Packaging",
+      "files": [
+        "packages/desktop/electron-builder.config.ts",
+        "packages/desktop/src/main/constants.ts",
+        "packages/desktop/src/main/index.ts"
+      ],
+      "critical": true
+    }
+  ],
+  "verificationGates": [
+    "bun run --filter @opencode-ai/app typecheck",
+    "bun run --filter @opencode-ai/desktop typecheck",
+    "bun test src/hooks/provider-catalog.test.ts src/router/hood-smart-router.test.ts",
+    "bun test electron-builder.config.test.ts"
+  ],
+  "syncHistory": [
+    {
+      "timestamp": "2026-09-20T23:30:00Z",
+      "upstreamCommit": "d870e22c70f27103016dcd479edcfebf86136d93",
+      "status": "INITIALIZED",
+      "testsPassed": true,
+      "releaseBuilt": true,
+      "notes": "Baseline established for Hood Smart Router 1.18.25 with upstream tracking."
+    }
+  ]
+}
