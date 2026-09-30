@@ -58,6 +58,6 @@ jobs:
       - name: Trigger Official Windows Release Build
         if: success()
         run: |
-          gh workflow run "Hood Smart Router Windows Build" --ref hood-smart-router
+          gh workflow run hood-smart-router-windows.yml --ref hood-smart-router
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
