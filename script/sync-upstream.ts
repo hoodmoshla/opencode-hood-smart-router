@@ -119,7 +119,9 @@ export async function syncUpstream() {
 
   // 7. Keep our repository's CI workflows isolated from upstream workflow modifications
   try {
-    runCommand("git checkout HEAD -- .github/workflows")
+    runCommand("git reset HEAD -- .github/workflows", true)
+    runCommand("git checkout HEAD -- .github/workflows", true)
+    runCommand("git clean -fd -- .github/workflows", true)
   } catch {}
 
   // 8. Check if critical protected features were overwritten or corrupted
