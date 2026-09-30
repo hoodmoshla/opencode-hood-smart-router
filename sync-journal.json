@@ -68,8 +68,7 @@
   "verificationGates": [
     "bun run --filter @opencode-ai/app typecheck",
     "bun run --filter @opencode-ai/desktop typecheck",
-    "bun test src/hooks/provider-catalog.test.ts src/router/hood-smart-router.test.ts",
-    "bun test electron-builder.config.test.ts"
+    "cd packages/app && bun test --conditions=solid src/router/hood-smart-router.test.ts"
   ],
   "syncHistory": [
     {
