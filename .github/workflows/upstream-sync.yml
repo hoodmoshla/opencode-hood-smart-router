@@ -63,6 +63,6 @@ jobs:
       - name: Trigger Official Windows Release Build
         if: success() && (env.pushed == 'true' || github.event.inputs.force_build == 'true')
         run: |
-          gh workflow run hood-smart-router-windows.yml --ref hood-smart-router
+          gh workflow run hood-smart-router-windows.yml -R ${{ github.repository }} --ref hood-smart-router
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
