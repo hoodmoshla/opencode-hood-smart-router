@@ -4,8 +4,8 @@
   "upstream": {
     "repository": "https://github.com/anomalyco/opencode.git",
     "branch": "dev",
-    "lastSyncedCommit": "d870e22c70f27103016dcd479edcfebf86136d93",
-    "lastSyncedTimestamp": "2026-09-20T23:30:00Z"
+    "lastSyncedCommit": "2fa3363c924c5c3e367b84a87ae478296a0ed59b",
+    "lastSyncedTimestamp": "2026-09-30T14:57:34.123Z"
   },
   "downstream": {
     "repository": "https://github.com/hoodmoshla/opencode-hood-smart-router.git",
@@ -19,7 +19,9 @@
   "protectedFeatures": [
     {
       "name": "Arabic Translation (i18n)",
-      "files": ["packages/app/src/i18n/ar.ts"],
+      "files": [
+        "packages/app/src/i18n/ar.ts"
+      ],
       "critical": true
     },
     {
@@ -43,7 +45,9 @@
     },
     {
       "name": "Native Built-in Agents (architect, seekai)",
-      "files": ["packages/opencode/src/agent/agent.ts"],
+      "files": [
+        "packages/opencode/src/agent/agent.ts"
+      ],
       "critical": true
     },
     {
@@ -71,6 +75,14 @@
     "cd packages/app && bun test --conditions=solid src/router/hood-smart-router.test.ts"
   ],
   "syncHistory": [
+    {
+      "timestamp": "2026-09-30T14:57:34.123Z",
+      "upstreamCommit": "2fa3363c924c5c3e367b84a87ae478296a0ed59b",
+      "status": "SUCCESS",
+      "testsPassed": true,
+      "releaseBuilt": false,
+      "notes": "Successfully merged and verified upstream commit 2fa3363c9."
+    },
     {
       "timestamp": "2026-09-20T23:30:00Z",
       "upstreamCommit": "d870e22c70f27103016dcd479edcfebf86136d93",
