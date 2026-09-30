@@ -117,7 +117,12 @@ export async function syncUpstream() {
     return { status: "CONFLICT", files: conflictedFiles, commit: latestUpstreamCommit }
   }
 
-  // 7. Check if critical protected features were overwritten or corrupted
+  // 7. Keep our repository's CI workflows isolated from upstream workflow modifications
+  try {
+    runCommand("git checkout HEAD -- .github/workflows")
+  } catch {}
+
+  // 8. Check if critical protected features were overwritten or corrupted
   console.log("Verifying protected Hood Smart Router features...")
   const changedFiles = runCommand("git diff --cached --name-only")
     .split("\n")
