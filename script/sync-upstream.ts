@@ -55,7 +55,7 @@ export async function syncUpstream() {
 
   // 2. Fetch upstream target branch
   console.log(`Fetching latest commits from upstream ${journal.upstream.branch}...`)
-  runCommand(`git fetch upstream ${journal.upstream.branch} --no-tags --depth=50`)
+  runCommand(`git fetch upstream ${journal.upstream.branch} --no-tags`)
 
   // 3. Get latest upstream commit
   const upstreamRef = `upstream/${journal.upstream.branch}`
@@ -99,7 +99,9 @@ export async function syncUpstream() {
     }
 
     console.log("\nAborting merge to prevent breaking Hood Smart Router custom modifications...")
-    runCommand("git merge --abort")
+    try {
+      runCommand("git merge --abort")
+    } catch {}
 
     // Record conflict in journal
     journal.syncHistory.unshift({
@@ -176,8 +178,15 @@ export async function syncUpstream() {
 }
 
 if (import.meta.main) {
-  syncUpstream().catch((err) => {
-    console.error("Sync failed:", err)
-    process.exit(1)
-  })
+  syncUpstream()
+    .then((result) => {
+      if (result.status === "CONFLICT") {
+        console.error("Halting CI: Manual review required for merge conflicts.")
+        process.exit(1)
+      }
+    })
+    .catch((err) => {
+      console.error("Sync failed:", err)
+      process.exit(1)
+    })
 }
