@@ -53,7 +53,7 @@ jobs:
         run: |
           git checkout hood-smart-router
           git merge upstream-sync --ff-only
-          git push origin hood-smart-router
+          git push origin hood-smart-router --no-verify
 
       - name: Trigger Official Windows Release Build
         if: success()
