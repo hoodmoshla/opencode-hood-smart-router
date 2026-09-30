@@ -51,12 +51,17 @@ jobs:
       - name: Push Synchronized Branch
         if: success()
         run: |
-          git checkout hood-smart-router
-          git merge upstream-sync --ff-only
-          git push origin hood-smart-router --no-verify
+          if git rev-parse --verify upstream-sync >/dev/null 2>&1; then
+            git checkout hood-smart-router
+            git merge upstream-sync --ff-only
+            git push origin hood-smart-router --no-verify
+            echo "pushed=true" >> $GITHUB_ENV
+          else
+            echo "Repository is already up to date with upstream. No push needed."
+          fi
 
       - name: Trigger Official Windows Release Build
-        if: success()
+        if: success() && (env.pushed == 'true' || github.event.inputs.force_build == 'true')
         run: |
           gh workflow run hood-smart-router-windows.yml --ref hood-smart-router
         env:
