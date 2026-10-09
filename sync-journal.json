@@ -4,8 +4,8 @@
   "upstream": {
     "repository": "https://github.com/anomalyco/opencode.git",
     "branch": "dev",
-    "lastSyncedCommit": "5d9cd9b259f0456522f318a7435501d03cfbee79",
-    "lastSyncedTimestamp": "2026-10-08T11:03:55.911Z"
+    "lastSyncedCommit": "388406238bd5ca15564a762840a2362c3a45bd9c",
+    "lastSyncedTimestamp": "2026-10-09T11:03:14.327Z"
   },
   "downstream": {
     "repository": "https://github.com/hoodmoshla/opencode-hood-smart-router.git",
@@ -75,6 +75,14 @@
     "cd packages/app && bun test --conditions=solid src/router/hood-smart-router.test.ts"
   ],
   "syncHistory": [
+    {
+      "timestamp": "2026-10-09T11:03:14.327Z",
+      "upstreamCommit": "388406238bd5ca15564a762840a2362c3a45bd9c",
+      "status": "SUCCESS",
+      "testsPassed": true,
+      "releaseBuilt": false,
+      "notes": "Successfully merged and verified upstream commit 388406238."
+    },
     {
       "timestamp": "2026-10-08T11:03:55.911Z",
       "upstreamCommit": "5d9cd9b259f0456522f318a7435501d03cfbee79",
